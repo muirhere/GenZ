@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Suicide rates among Gen Z</title>
+<style>
+:root{--bg:#fff;--text:#000;--muted:#555;--line:#000;--soft:#e6e6e6;--on:#000;--onText:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#000;--text:#fff;--muted:#aaa;--line:#fff;--soft:#222;--on:#fff;--onText:#000}}
+:root[data-theme="dark"]{--bg:#000;--text:#fff;--muted:#aaa;--line:#fff;--soft:#222;--on:#fff;--onText:#000}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Georgia,"Times New Roman",Times,serif;line-height:1.6}
+.wrap{max-width:880px;margin:0 auto;padding:48px 20px 64px}
+h1{font-size:clamp(1.8rem,5vw,2.8rem);font-weight:300;letter-spacing:-.02em;margin:0 0 6px;line-height:1.15}
+.sub{color:var(--muted);margin:0 0 28px;font-size:.95rem}
+.note{border:1px solid var(--line);padding:12px 16px;margin-bottom:36px;font-size:.92rem}
+.controls{display:flex;flex-wrap:wrap;gap:12px 28px;margin-bottom:18px;border-top:1px solid var(--line);padding-top:18px}
+.group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.group span{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-right:4px}
+button{font:inherit;font-size:.85rem;padding:5px 14px;border:1px solid var(--line);background:transparent;color:var(--text);cursor:pointer;border-radius:0}
+button:hover{background:var(--soft)}
+button.on{background:var(--on);color:var(--onText)}
+.chartbox{position:relative;height:400px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0;margin:28px 0;border:1px solid var(--line)}
+.stat{padding:14px 16px;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-size:1.5rem;font-weight:300}
+.stat small{color:var(--muted)}
+h2{font-size:.75rem;text-transform:uppercase;letter-spacing:.1em;font-weight:500;margin:36px 0 6px;border-top:1px solid var(--line);padding-top:14px}
+p{margin:0}
+.foot{margin-top:36px;font-size:.8rem;color:var(--muted);border-top:1px solid var(--line);padding-top:14px}
+.badge{font-size:.7rem;border:1px solid var(--line);padding:1px 8px;margin-left:10px;vertical-align:middle;letter-spacing:.08em;text-transform:uppercase;font-weight:400}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Suicide rates among Gen Z <span class="badge">sample data</span></h1>
+<p class="sub">Born 1997-2012 · United States · deaths per 100,000 people · 1997-2026</p>
+<div class="note">Content note: this project discusses suicide. If you or someone you know is struggling, call or text <strong>988</strong> (Suicide &amp; Crisis Lifeline).</div>
+
+<div class="controls">
+<div class="group"><span>Show</span><button class="on" data-sex="both">Both</button><button data-sex="Male">Male</button><button data-sex="Other genders">Other genders</button></div>
+<div class="group"><span>Chart</span><button class="on" data-type="line">Line</button><button data-type="bar">Bar</button></div>
+<div class="group"><span>From</span><button class="on" data-from="1997">1997</button><button data-from="2007">2007</button><button data-from="2015">2015</button></div>
+</div>
+<div class="chartbox"><canvas id="chart" role="img" aria-label="Suicide rate per 100,000 among Gen Z by year and sex, 1997 to 2026"></canvas></div>
+
+<div class="stats" id="stats"></div>
+
+<h2>Differences by region</h2>
+<div class="controls" style="border-top:0;padding-top:0"><div class="group"><span>Sort</span><button class="on" data-sort="rate">By rate</button><button data-sort="name">A-Z</button></div></div>
+<div class="chartbox" style="height:460px"><canvas id="regionChart" role="img" aria-label="Suicide rate per 100,000 among Gen Z by US Census division, 2018 to 2022"></canvas></div>
+
+<h2>The story</h2>
+<p>Gen Z was born 1997-2012, so the first members turn 10, the youngest age tracked for suicide data, in 2007. Rates among Gen Z changed over time and differ between male and other genders. No single cause explains these trends. Prevention, connection and support matter.</p>
+
+<p class="foot">Data: the values in the <code>rows</code> array are illustrative sample numbers, not official statistics. Replace them with rates from CDC WONDER, Underlying Cause of Death (ICD-10 X60-X84), for people born 1997-2012. Regional values (nine US Census divisions, 2018-2022 pooled) are sample data too. Blank years before 2007 have no Gen Z data; dashed lines after 2022 are provisional. Small counts are suppressed and deaths may be undercounted. CDC WONDER records sex as male or female only, so the "other genders" series needs a source that reports gender beyond male, or a clearly stated definition.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+const years=[];for(let y=1997;y<=2026;y++)years.push(y);
+const male=[null,null,null,null,null,null,null,null,null,null,11.8,12.0,12.4,12.7,13.0,13.2,13.5,13.9,14.5,15.3,15.7,15.8,16.1,16.0,16.6,16.4,16.5,16.3,16.2,16.1];
+const female=[null,null,null,null,null,null,null,null,null,null,3.0,3.1,3.2,3.2,3.4,3.5,3.6,3.9,4.3,4.8,5.2,5.6,5.9,5.8,6.1,6.0,6.0,5.9,5.9,5.8];
+const rows=[];
+years.forEach((y,i)=>{rows.push({year:y,sex:"Male",rate:male[i]});rows.push({year:y,sex:"Other genders",rate:female[i]});});
+
+const state={sex:"both",type:"line",from:1997,sort:"rate"};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const rate=(y,s)=>rows.find(r=>r.year===y&&r.sex===s).rate;
+let chart;Chart.defaults.font.family='Georgia,"Times New Roman",serif';
+
+const zone={id:"zone",beforeDatasetsDraw(c){
+  const labels=c.data.labels,i=labels.indexOf(2007);
+  if(i<=0)return;
+  const {ctx,chartArea:a,scales:{x}}=c;
+  const edge=x.getPixelForValue(i)-(x.getPixelForValue(1)-x.getPixelForValue(0))/2;
+  ctx.save();ctx.fillStyle=css("--soft");ctx.fillRect(a.left,a.top,edge-a.left,a.bottom-a.top);
+  ctx.fillStyle=css("--muted");ctx.font="12px Georgia,'Times New Roman',serif";ctx.textAlign="center";
+  const mid=(a.left+edge)/2;
+  ctx.fillText("No Gen Z data",mid,a.top+a.height/2-6);ctx.fillText("(under age 10)",mid,a.top+a.height/2+12);
+  ctx.restore();
+}};
+
+function build(){
+  const text=css("--text"),muted=css("--muted"),grid=css("--soft");
+  const yrs=years.filter(y=>y>=state.from);
+  const sexes=state.sex==="both"?["Male","Female"]:[state.sex];
+  const col={Male:text,"Other genders":muted};
+  const datasets=sexes.map(s=>({
+    label:s,data:yrs.map(y=>rate(y,s)),
+    borderColor:col[s],backgroundColor:s==="Male"?text:muted,
+    borderWidth:2,tension:.25,pointRadius:3,pointHoverRadius:6,
+    pointStyle:s==="Male"?"circle":"rect",
+    segment:{borderDash:c=>yrs[c.p1DataIndex]>2022?[5,5]:undefined}
+  }));
+  if(chart)chart.destroy();
+  chart=new Chart(document.getElementById("chart"),{
+    type:state.type,data:{labels:yrs,datasets},plugins:[zone],
+    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:"index",intersect:false},
+      plugins:{
+        title:{display:true,text:"Suicide rate among Gen Z by year and gender",color:text,font:{size:15,weight:"normal"}},
+        legend:{display:true,position:"bottom",labels:{color:text,usePointStyle:true}},
+        tooltip:{backgroundColor:text,titleColor:css("--bg"),bodyColor:css("--bg"),
+          callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.y.toFixed(1)} per 100,000`+(c.label>2022?" (provisional)":"")}}
+      },
+      scales:{
+        x:{title:{display:true,text:"Year",color:muted},ticks:{color:muted,maxTicksLimit:10},grid:{display:false},border:{color:text}},
+        y:{beginAtZero:true,title:{display:true,text:"Deaths per 100,000",color:muted},ticks:{color:muted},grid:{color:grid},border:{color:text}}
+      }}
+  });
+  stats(yrs,sexes);
+  region(sexes);
+}
+function stats(yrs,sexes){
+  document.getElementById("stats").innerHTML=sexes.map(s=>{
+    const have=yrs.filter(y=>rate(y,s)!==null),f=have[0],l=have[have.length-1];
+    const a=rate(f,s),b=rate(l,s),p=((b-a)/a*100).toFixed(0);
+    return `<div class="stat"><small>${s}, ${f} to ${l}</small><b>${a.toFixed(1)} → ${b.toFixed(1)}</b><small>${p>=0?"+":""}${p}% change in rate</small></div>`;
+  }).join("");
+}
+document.querySelectorAll("button").forEach(btn=>btn.addEventListener("click",()=>{
+  const k=btn.dataset.sex?"sex":btn.dataset.type?"type":btn.dataset.sort?"sort":"from";
+  state[k]=k==="from"?+btn.dataset.from:btn.dataset[k];
+  btn.parentElement.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b===btn));
+  build();
+}));
+const regions=[["New England",9.8,3.1],["Middle Atlantic",8.9,2.8],["East North Central",14.2,5.1],["West North Central",16.9,5.8],["South Atlantic",14.0,4.6],["East South Central",16.0,5.2],["West South Central",15.4,5.0],["Mountain",21.3,7.1],["Pacific",13.1,5.4]];
+let rChart;
+function region(sexes){
+  const text=css("--text"),muted=css("--muted"),grid=css("--soft");
+  const idx={Male:1,"Other genders":2};
+  const avg=r=>sexes.reduce((t,s)=>t+r[idx[s]],0)/sexes.length;
+  const list=[...regions].sort((a,b)=>state.sort==="rate"?avg(b)-avg(a):a[0].localeCompare(b[0]));
+  const col={Male:text,"Other genders":muted};
+  if(rChart)rChart.destroy();
+  rChart=new Chart(document.getElementById("regionChart"),{
+    type:"bar",
+    data:{labels:list.map(r=>r[0]),datasets:sexes.map(s=>({label:s,data:list.map(r=>r[idx[s]]),backgroundColor:col[s],borderColor:text,borderWidth:1}))},
+    options:{indexAxis:"y",responsive:true,maintainAspectRatio:false,
+      plugins:{
+        title:{display:true,text:"Suicide rate among Gen Z by US region, 2018-2022 pooled",color:text,font:{size:15,weight:"normal"}},
+        legend:{display:true,position:"bottom",labels:{color:text}},
+        tooltip:{backgroundColor:text,titleColor:css("--bg"),bodyColor:css("--bg"),callbacks:{label:c=>` ${c.dataset.label}: ${c.parsed.x.toFixed(1)} per 100,000`}}
+      },
+      scales:{
+        x:{beginAtZero:true,title:{display:true,text:"Deaths per 100,000",color:muted},ticks:{color:muted},grid:{color:grid},border:{color:text}},
+        y:{title:{display:true,text:"Census division",color:muted},ticks:{color:text},grid:{display:false},border:{color:text}}
+      }}
+  });
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",build);
+build();
+</script>
+</body>
+</html>
